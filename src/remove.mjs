@@ -1,7 +1,8 @@
-import { readdir, rm, stat } from "node:fs/promises";
+import { rm, stat } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 
 import { resolveDest } from "./paths.mjs";
+import { findSkills } from "./list.mjs";
 import * as log from "./log.mjs";
 
 export async function remove(args) {
@@ -12,39 +13,27 @@ export async function remove(args) {
   }
 
   const dest = resolveDest(opts);
-
-  let entries;
-  try {
-    entries = await readdir(dest);
-  } catch {
-    log.pipe(`No skills installed at ${log.cyan(prettyPath(dest))}`);
-    return;
-  }
-  const skills = entries.filter((n) => n.endsWith(".skill"));
+  const installed = await findSkills(dest);
 
   let names = opts.names;
-  if (opts.all) {
-    names = skills.map((n) => n.replace(/\.skill$/, ""));
-  }
+  if (opts.all) names = installed;
   if (!names.length) {
     log.fail("Specify a skill name to remove, or use --all");
     log.pipe();
-    log.pipe(`Available: ${skills.map((s) => s.replace(/\.skill$/, "")).join(", ") || "(none)"}`);
+    log.pipe(`Available: ${installed.join(", ") || "(none)"}`);
     process.exit(1);
   }
 
   let removed = 0;
   for (const name of names) {
-    const file = join(dest, `${name}.skill`);
+    const dir = join(dest, name);
     try {
-      await stat(file);
+      await stat(join(dir, "SKILL.md"));
     } catch {
       log.warn(`Not found: ${name}`);
       continue;
     }
-    await rm(file, { force: true });
-    const dirCopy = join(dest, name);
-    await rm(dirCopy, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true });
     log.success(`Removed ${log.bold(name)}`);
     removed++;
   }
@@ -82,16 +71,16 @@ function prettyPath(p) {
 
 function printRemoveHelp() {
   process.stderr.write(`\
-${log.bold("coskills remove")} - Remove Cowork skill bundles
+${log.bold("coskills remove")} - Remove an installed Cowork skill
 
 ${log.bold("Usage:")}
   coskills remove [skills...] [options]
   coskills rm     [skills...] [options]
 
 ${log.bold("Options:")}
-  -g, --global         Remove from global scope
+  -g, --global         Remove from ~/.claude/skills (default: project)
   --dest <path>        Override destination directory
-  --all                Remove every skill in the destination
+  --all                Remove every installed skill in the destination
   -h, --help           Show this help message
 `);
 }

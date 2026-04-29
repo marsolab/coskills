@@ -43,34 +43,32 @@ export async function run(argv) {
 
 function printHelp() {
   process.stderr.write(`\
-${log.bold("coskills")} - Bundle skills.sh skills as Cowork-ready zip archives
+${log.bold("coskills")} - Install skills from skills.sh into your Cowork skill folder
 
 ${log.bold("Usage:")}
   coskills <command> [options]
 
 ${log.bold("Manage skills:")}
-  ${log.bold("add")} <package>        Install a skill from skills.sh and bundle it
-                       (alias: ${log.bold("a")})
+  ${log.bold("add")} <package>        Install a skill from skills.sh (alias: ${log.bold("a")})
                        e.g. vercel-labs/agent-skills
                             https://github.com/vercel-labs/agent-skills
-  ${log.bold("remove")} [skills...]   Remove a Cowork skill bundle (alias: ${log.bold("rm")})
-  ${log.bold("list")}, ${log.bold("ls")}             List bundled skills
+  ${log.bold("remove")} [skills...]   Remove an installed skill (alias: ${log.bold("rm")})
+  ${log.bold("list")}, ${log.bold("ls")}             List installed skills
 
 ${log.bold("Add Options:")}
-  -g, --global           Place bundles in ~/.cowork/skills instead of project
-  -s, --skill <skills>   Specify skill names to bundle (use '*' for all)
+  -g, --global           Install to ~/.claude/skills (available across projects)
+  -s, --skill <skills>   Specify skill names to install (use '*' for all)
   -y, --yes              Skip confirmation prompts
   --dest <path>          Override destination directory
   --full-depth           Search all subdirectories even when a root SKILL.md exists
-  --keep-source          Also keep the unzipped skill folder next to each zip
 
 ${log.bold("Remove Options:")}
-  -g, --global           Remove from global scope
+  -g, --global           Remove from ~/.claude/skills (default: project)
   --dest <path>          Override destination directory
-  --all                  Remove every skill in the destination
+  --all                  Remove every installed skill in the destination
 
 ${log.bold("List Options:")}
-  -g, --global           List global skills (default: project)
+  -g, --global           List skills under ~/.claude/skills (default: project)
   --dest <path>          Override destination directory
   --json                 Output as JSON
 

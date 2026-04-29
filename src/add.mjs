@@ -3,7 +3,6 @@ import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 
 import { runSkillsAdd } from "./skills.mjs";
-import { zipDirectory } from "./zip.mjs";
 import { resolveDest, describeScope } from "./paths.mjs";
 import * as log from "./log.mjs";
 
@@ -24,7 +23,7 @@ export async function add(args) {
   const dest = resolveDest(opts);
   const scope = describeScope(opts);
 
-  log.step(`Bundling ${log.bold(opts.pkg)} for Cowork (${scope})`);
+  log.step(`Installing ${log.bold(opts.pkg)} for Cowork (${scope} scope)`);
   log.pipe(`Destination: ${log.cyan(prettyPath(dest))}`);
   log.blank();
 
@@ -57,40 +56,36 @@ export async function add(args) {
 
     await mkdir(dest, { recursive: true });
 
-    const bundled = [];
+    const installed = [];
     for (const name of dirs) {
       const srcDir = join(skillsRoot, name);
-      const archivePath = join(dest, `${name}.skill`);
+      const destDir = join(dest, name);
       let existed = false;
       try {
-        await stat(archivePath);
+        await stat(destDir);
         existed = true;
       } catch {
         /* fresh */
       }
-      await rm(archivePath, { force: true });
-      await zipDirectory(srcDir, archivePath, { prefix: name });
-      if (opts.keepSource) {
-        const dirOut = join(dest, name);
-        await rm(dirOut, { recursive: true, force: true });
-        await cp(srcDir, dirOut, { recursive: true });
-      }
-      const s = await stat(archivePath);
-      bundled.push({ name, archivePath, size: s.size, existed });
+      await rm(destDir, { recursive: true, force: true });
+      await cp(srcDir, destDir, { recursive: true });
+      installed.push({ name, destDir, existed });
     }
 
     log.blank();
-    log.step(`Bundled ${bundled.length} skill${bundled.length === 1 ? "" : "s"}`);
-    for (const b of bundled) {
-      const action = b.existed ? "updated" : "added";
+    log.step(
+      `Installed ${installed.length} skill${installed.length === 1 ? "" : "s"}`,
+    );
+    for (const i of installed) {
+      const action = i.existed ? "updated" : "added";
       log.pipe(
-        `  ${log.green("✓")} ${log.bold(b.name)} ${log.dim(`(${action}, ${log.humanSize(b.size)})`)}`,
+        `  ${log.green("✓")} ${log.bold(i.name)} ${log.dim(`(${action})`)}`,
       );
-      log.pipe(`    → ${prettyPath(b.archivePath)}`);
+      log.pipe(`    → ${prettyPath(join(i.destDir, "SKILL.md"))}`);
     }
     log.blank();
     log.done(
-      `Done!  Coworkers can now load these skills from ${log.cyan(prettyPath(dest))}.`,
+      `Done!  Claude Code will pick these up from ${log.cyan(prettyPath(dest))}.`,
     );
   } finally {
     await rm(tmp, { recursive: true, force: true });
@@ -104,7 +99,6 @@ function parseAddArgs(argv) {
     skills: [],
     fullDepth: false,
     dest: null,
-    keepSource: false,
     yes: false,
     help: false,
   };
@@ -114,7 +108,6 @@ function parseAddArgs(argv) {
     else if (a === "-g" || a === "--global") out.global = true;
     else if (a === "-y" || a === "--yes") out.yes = true;
     else if (a === "--full-depth") out.fullDepth = true;
-    else if (a === "--keep-source") out.keepSource = true;
     else if (a === "--dest") {
       const v = argv[++i];
       if (!v) {
@@ -141,15 +134,13 @@ function parseAddArgs(argv) {
 
 function prettyPath(p) {
   const rel = relative(process.cwd(), resolve(p));
-  if (!rel.startsWith("..") && !rel.startsWith("/")) {
-    return `./${rel}`;
-  }
+  if (!rel.startsWith("..") && !rel.startsWith("/")) return `./${rel}`;
   return p;
 }
 
 function printAddHelp() {
   process.stderr.write(`\
-${log.bold("coskills add")} - Install a skill from skills.sh and bundle it for Cowork
+${log.bold("coskills add")} - Install a skill from skills.sh into your Cowork skill folder
 
 ${log.bold("Usage:")}
   coskills add <package> [options]
@@ -158,12 +149,11 @@ ${log.bold("Arguments:")}
   <package>            Skill package (e.g. vercel-labs/agent-skills, or a git URL)
 
 ${log.bold("Options:")}
-  -g, --global         Place bundles in ~/.cowork/skills instead of project
+  -g, --global         Install to ~/.claude/skills (available across projects)
   -s, --skill <names>  Filter which skills from a multi-skill repo (use '*' for all)
   -y, --yes            Skip confirmation prompts (forwarded to skills.sh)
   --dest <path>        Override destination directory
   --full-depth         Search all subdirectories even when a root SKILL.md exists
-  --keep-source        Also keep the unzipped skill folder next to each zip
   -h, --help           Show this help message
 `);
 }
