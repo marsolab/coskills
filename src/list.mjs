@@ -12,17 +12,31 @@ export async function list(args) {
   }
   const dest = resolveDest(opts);
 
-  const skills = await findSkills(dest);
+  let entries;
+  try {
+    entries = await readdir(dest, { withFileTypes: true });
+  } catch {
+    if (opts.json) {
+      process.stdout.write("[]\n");
+      return;
+    }
+    log.pipe(`No skills bundled at ${log.cyan(prettyPath(dest))}`);
+    return;
+  }
+
+  const skills = entries
+    .filter((e) => e.isFile() && e.name.endsWith(".skill"))
+    .map((e) => e.name)
+    .sort();
 
   if (opts.json) {
     const out = await Promise.all(
-      skills.map(async (name) => {
-        const dir = join(dest, name);
-        const skillFile = join(dir, "SKILL.md");
-        const s = await stat(skillFile);
+      skills.map(async (file) => {
+        const s = await stat(join(dest, file));
         return {
-          name,
-          path: dir,
+          name: file.replace(/\.skill$/, ""),
+          path: join(dest, file),
+          size: s.size,
           modified: s.mtime.toISOString(),
         };
       }),
@@ -32,40 +46,19 @@ export async function list(args) {
   }
 
   if (skills.length === 0) {
-    log.pipe(`No skills installed at ${log.cyan(prettyPath(dest))}`);
+    log.pipe(`No skills bundled at ${log.cyan(prettyPath(dest))}`);
     return;
   }
 
   log.step(
     `${skills.length} ${describeScope(opts)} skill${skills.length === 1 ? "" : "s"} in ${log.cyan(prettyPath(dest))}`,
   );
-  for (const name of skills) {
-    log.pipe(`  ${log.green("•")} ${log.bold(name)}`);
+  for (const file of skills) {
+    const s = await stat(join(dest, file));
+    log.pipe(
+      `  ${log.green("•")} ${log.bold(file.replace(/\.skill$/, ""))} ${log.dim(`(${log.humanSize(s.size)})`)}`,
+    );
   }
-}
-
-export async function findSkills(dest) {
-  let entries;
-  try {
-    entries = await readdir(dest, { withFileTypes: true });
-  } catch {
-    return [];
-  }
-  const dirs = entries
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
-    .sort();
-
-  const skills = [];
-  for (const name of dirs) {
-    try {
-      const s = await stat(join(dest, name, "SKILL.md"));
-      if (s.isFile()) skills.push(name);
-    } catch {
-      /* directory without a SKILL.md is not a skill */
-    }
-  }
-  return skills;
 }
 
 function parseListArgs(argv) {
@@ -97,14 +90,14 @@ function prettyPath(p) {
 
 function printListHelp() {
   process.stderr.write(`\
-${log.bold("coskills list")} - List installed Cowork skills
+${log.bold("coskills list")} - List bundled Cowork skill archives
 
 ${log.bold("Usage:")}
   coskills list [options]
   coskills ls   [options]
 
 ${log.bold("Options:")}
-  -g, --global         List skills under ~/.claude/skills (default: project)
+  -g, --global         List archives in ~/.cowork/skills (default: project)
   --dest <path>        Override destination directory
   --json               Output as JSON (machine-readable, no ANSI codes)
   -h, --help           Show this help message

@@ -1,8 +1,7 @@
-import { rm, stat } from "node:fs/promises";
+import { readdir, rm, stat } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 
 import { resolveDest } from "./paths.mjs";
-import { findSkills } from "./list.mjs";
 import * as log from "./log.mjs";
 
 export async function remove(args) {
@@ -13,27 +12,39 @@ export async function remove(args) {
   }
 
   const dest = resolveDest(opts);
-  const installed = await findSkills(dest);
+
+  let entries;
+  try {
+    entries = await readdir(dest);
+  } catch {
+    log.pipe(`No skills bundled at ${log.cyan(prettyPath(dest))}`);
+    return;
+  }
+  const skills = entries.filter((n) => n.endsWith(".skill"));
 
   let names = opts.names;
-  if (opts.all) names = installed;
+  if (opts.all) {
+    names = skills.map((n) => n.replace(/\.skill$/, ""));
+  }
   if (!names.length) {
     log.fail("Specify a skill name to remove, or use --all");
     log.pipe();
-    log.pipe(`Available: ${installed.join(", ") || "(none)"}`);
+    log.pipe(
+      `Available: ${skills.map((s) => s.replace(/\.skill$/, "")).join(", ") || "(none)"}`,
+    );
     process.exit(1);
   }
 
   let removed = 0;
   for (const name of names) {
-    const dir = join(dest, name);
+    const file = join(dest, `${name}.skill`);
     try {
-      await stat(join(dir, "SKILL.md"));
+      await stat(file);
     } catch {
       log.warn(`Not found: ${name}`);
       continue;
     }
-    await rm(dir, { recursive: true, force: true });
+    await rm(file, { force: true });
     log.success(`Removed ${log.bold(name)}`);
     removed++;
   }
@@ -71,16 +82,16 @@ function prettyPath(p) {
 
 function printRemoveHelp() {
   process.stderr.write(`\
-${log.bold("coskills remove")} - Remove an installed Cowork skill
+${log.bold("coskills remove")} - Remove bundled Cowork skill archives
 
 ${log.bold("Usage:")}
   coskills remove [skills...] [options]
   coskills rm     [skills...] [options]
 
 ${log.bold("Options:")}
-  -g, --global         Remove from ~/.claude/skills (default: project)
+  -g, --global         Remove from ~/.cowork/skills (default: project)
   --dest <path>        Override destination directory
-  --all                Remove every installed skill in the destination
+  --all                Remove every archive in the destination
   -h, --help           Show this help message
 `);
 }

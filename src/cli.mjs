@@ -43,32 +43,33 @@ export async function run(argv) {
 
 function printHelp() {
   process.stderr.write(`\
-${log.bold("coskills")} - Install skills from skills.sh into your Cowork skill folder
+${log.bold("coskills")} - Bundle skills.sh skills as Claude Cowork-uploadable ZIP archives
 
 ${log.bold("Usage:")}
   coskills <command> [options]
 
 ${log.bold("Manage skills:")}
-  ${log.bold("add")} <package>        Install a skill from skills.sh (alias: ${log.bold("a")})
+  ${log.bold("add")} <package>        Install a skill from skills.sh and bundle it
+                       (alias: ${log.bold("a")})
                        e.g. vercel-labs/agent-skills
                             https://github.com/vercel-labs/agent-skills
-  ${log.bold("remove")} [skills...]   Remove an installed skill (alias: ${log.bold("rm")})
-  ${log.bold("list")}, ${log.bold("ls")}             List installed skills
+  ${log.bold("remove")} [skills...]   Remove a bundled skill archive (alias: ${log.bold("rm")})
+  ${log.bold("list")}, ${log.bold("ls")}             List bundled skill archives
 
 ${log.bold("Add Options:")}
-  -g, --global           Install to ~/.claude/skills (available across projects)
-  -s, --skill <skills>   Specify skill names to install (use '*' for all)
+  -g, --global           Place archives in ~/.cowork/skills instead of project
+  -s, --skill <skills>   Specify skill names to bundle (use '*' for all)
   -y, --yes              Skip confirmation prompts
   --dest <path>          Override destination directory
   --full-depth           Search all subdirectories even when a root SKILL.md exists
 
 ${log.bold("Remove Options:")}
-  -g, --global           Remove from ~/.claude/skills (default: project)
+  -g, --global           Remove from ~/.cowork/skills (default: project)
   --dest <path>          Override destination directory
-  --all                  Remove every installed skill in the destination
+  --all                  Remove every archive in the destination
 
 ${log.bold("List Options:")}
-  -g, --global           List skills under ~/.claude/skills (default: project)
+  -g, --global           List archives in ~/.cowork/skills (default: project)
   --dest <path>          Override destination directory
   --json                 Output as JSON
 
@@ -82,6 +83,10 @@ ${log.bold("Examples:")}
   ${log.dim("$")} coskills add vercel-labs/agent-skills --global
   ${log.dim("$")} coskills list
   ${log.dim("$")} coskills remove pr-review
+
+After bundling, upload each .skill archive in Claude Cowork via
+  ${log.cyan("Customize → Skills → + → \"Upload a skill\"")}
+  ${log.cyan("https://claude.ai/customize/skills")}
 
 Discover more skills at ${log.cyan("https://skills.sh/")}
 `);
