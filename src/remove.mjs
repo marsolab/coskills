@@ -20,22 +20,22 @@ export async function remove(args) {
     log.pipe(`No skills installed at ${log.cyan(prettyPath(dest))}`);
     return;
   }
-  const zips = entries.filter((n) => n.endsWith(".zip"));
+  const skills = entries.filter((n) => n.endsWith(".skill"));
 
   let names = opts.names;
   if (opts.all) {
-    names = zips.map((n) => n.replace(/\.zip$/, ""));
+    names = skills.map((n) => n.replace(/\.skill$/, ""));
   }
   if (!names.length) {
     log.fail("Specify a skill name to remove, or use --all");
     log.pipe();
-    log.pipe(`Available: ${zips.map((z) => z.replace(/\.zip$/, "")).join(", ") || "(none)"}`);
+    log.pipe(`Available: ${skills.map((s) => s.replace(/\.skill$/, "")).join(", ") || "(none)"}`);
     process.exit(1);
   }
 
   let removed = 0;
   for (const name of names) {
-    const file = join(dest, `${name}.zip`);
+    const file = join(dest, `${name}.skill`);
     try {
       await stat(file);
     } catch {

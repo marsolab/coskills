@@ -60,23 +60,23 @@ export async function add(args) {
     const bundled = [];
     for (const name of dirs) {
       const srcDir = join(skillsRoot, name);
-      const zipPath = join(dest, `${name}.zip`);
+      const archivePath = join(dest, `${name}.skill`);
       let existed = false;
       try {
-        await stat(zipPath);
+        await stat(archivePath);
         existed = true;
       } catch {
         /* fresh */
       }
-      await rm(zipPath, { force: true });
-      await zipDirectory(srcDir, zipPath, { prefix: name });
+      await rm(archivePath, { force: true });
+      await zipDirectory(srcDir, archivePath, { prefix: name });
       if (opts.keepSource) {
         const dirOut = join(dest, name);
         await rm(dirOut, { recursive: true, force: true });
         await cp(srcDir, dirOut, { recursive: true });
       }
-      const s = await stat(zipPath);
-      bundled.push({ name, zipPath, size: s.size, existed });
+      const s = await stat(archivePath);
+      bundled.push({ name, archivePath, size: s.size, existed });
     }
 
     log.blank();
@@ -86,7 +86,7 @@ export async function add(args) {
       log.pipe(
         `  ${log.green("✓")} ${log.bold(b.name)} ${log.dim(`(${action}, ${log.humanSize(b.size)})`)}`,
       );
-      log.pipe(`    → ${prettyPath(b.zipPath)}`);
+      log.pipe(`    → ${prettyPath(b.archivePath)}`);
     }
     log.blank();
     log.done(

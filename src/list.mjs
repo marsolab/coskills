@@ -24,18 +24,18 @@ export async function list(args) {
     return;
   }
 
-  const zips = entries
-    .filter((e) => e.isFile() && e.name.endsWith(".zip"))
+  const skills = entries
+    .filter((e) => e.isFile() && e.name.endsWith(".skill"))
     .map((e) => e.name)
     .sort();
 
   if (opts.json) {
     const out = await Promise.all(
-      zips.map(async (z) => {
-        const s = await stat(join(dest, z));
+      skills.map(async (file) => {
+        const s = await stat(join(dest, file));
         return {
-          name: z.replace(/\.zip$/, ""),
-          path: join(dest, z),
+          name: file.replace(/\.skill$/, ""),
+          path: join(dest, file),
           size: s.size,
           modified: s.mtime.toISOString(),
         };
@@ -45,16 +45,16 @@ export async function list(args) {
     return;
   }
 
-  if (zips.length === 0) {
+  if (skills.length === 0) {
     log.pipe(`No skills installed at ${log.cyan(prettyPath(dest))}`);
     return;
   }
 
-  log.step(`${zips.length} ${describeScope(opts)} skill${zips.length === 1 ? "" : "s"} in ${log.cyan(prettyPath(dest))}`);
-  for (const z of zips) {
-    const s = await stat(join(dest, z));
+  log.step(`${skills.length} ${describeScope(opts)} skill${skills.length === 1 ? "" : "s"} in ${log.cyan(prettyPath(dest))}`);
+  for (const file of skills) {
+    const s = await stat(join(dest, file));
     log.pipe(
-      `  ${log.green("•")} ${log.bold(z.replace(/\.zip$/, ""))} ${log.dim(`(${log.humanSize(s.size)})`)}`,
+      `  ${log.green("•")} ${log.bold(file.replace(/\.skill$/, ""))} ${log.dim(`(${log.humanSize(s.size)})`)}`,
     );
   }
 }
