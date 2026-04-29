@@ -1,0 +1,34 @@
+{
+  "name": "coskills",
+  "version": "0.1.0",
+  "description": "Install skills from skills.sh and bundle them as Cowork-ready zip archives.",
+  "bin": {
+    "coskills": "./bin/coskills.mjs"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test 'test/*.test.mjs'"
+  },
+  "keywords": [
+    "skills",
+    "skills.sh",
+    "cowork",
+    "ai",
+    "agent-skills",
+    "cli"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marsolab/coskills.git"
+  }
+}
