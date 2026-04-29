@@ -127,12 +127,28 @@ The zip is built in pure Node with `zlib`, so there are no native dependencies a
 
 ## Development
 
-```sh
-# run tests
-node --test 'test/*.test.mjs'
+The CLI is written in TypeScript. `tsc` compiles `src/*.ts` → `dist/*.js`; the
+shipped `bin/coskills.js` shim is a thin entrypoint that imports the compiled
+output.
 
-# run the CLI from source
-node bin/coskills.mjs add vercel-labs/agent-skills
+```sh
+# install dev dependencies (typescript, tsx, @types/node)
+npm install
+
+# build dist/ for production / publishing
+npm run build
+
+# run tests (tsx executes the TS sources directly)
+npm test
+
+# typecheck without emitting
+npm run typecheck
+
+# run the CLI (after `npm run build`)
+node bin/coskills.js add vercel-labs/agent-skills
+
+# rebuild on file changes during development
+npx tsc --watch
 ```
 
 ## License

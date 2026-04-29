@@ -2,10 +2,10 @@ import { mkdtemp, readdir, mkdir, rm, rename, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 
-import { runSkillsAdd } from "./skills.mjs";
-import { zipDirectory } from "./zip.mjs";
-import { resolveDest, describeScope } from "./paths.mjs";
-import * as log from "./log.mjs";
+import { runSkillsAdd } from "./skills.js";
+import { zipDirectory } from "./zip.js";
+import { resolveDest, describeScope } from "./paths.js";
+import * as log from "./log.js";
 
 // Claude Cowork (Claude.ai surfaces) requires the manifest inside an uploaded
 // skill ZIP to be named `Skill.md`. The skills.sh ecosystem stores it as
@@ -14,7 +14,24 @@ import * as log from "./log.mjs";
 const COWORK_MANIFEST = "Skill.md";
 const SOURCE_MANIFEST = "SKILL.md";
 
-export async function add(args) {
+interface AddOptions {
+  pkg: string | null;
+  global: boolean;
+  skills: string[];
+  fullDepth: boolean;
+  dest: string | null;
+  yes: boolean;
+  help: boolean;
+}
+
+interface BundledSkill {
+  name: string;
+  archivePath: string;
+  size: number;
+  existed: boolean;
+}
+
+export async function add(args: string[]): Promise<void> {
   const opts = parseAddArgs(args);
   if (opts.help) {
     printAddHelp();
@@ -64,7 +81,7 @@ export async function add(args) {
 
     await mkdir(dest, { recursive: true });
 
-    const bundled = [];
+    const bundled: BundledSkill[] = [];
     for (const name of dirs) {
       const srcDir = join(skillsRoot, name);
       await renameManifestForCowork(srcDir);
@@ -104,7 +121,7 @@ export async function add(args) {
   }
 }
 
-async function renameManifestForCowork(skillDir) {
+async function renameManifestForCowork(skillDir: string): Promise<void> {
   const upper = join(skillDir, SOURCE_MANIFEST);
   const cowork = join(skillDir, COWORK_MANIFEST);
   let upperExists = false;
@@ -126,8 +143,8 @@ async function renameManifestForCowork(skillDir) {
   }
 }
 
-function parseAddArgs(argv) {
-  const out = {
+function parseAddArgs(argv: string[]): AddOptions {
+  const out: AddOptions = {
     pkg: null,
     global: false,
     skills: [],
@@ -137,7 +154,7 @@ function parseAddArgs(argv) {
     help: false,
   };
   for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
+    const a = argv[i]!;
     if (a === "-h" || a === "--help") out.help = true;
     else if (a === "-g" || a === "--global") out.global = true;
     else if (a === "-y" || a === "--yes") out.yes = true;
@@ -150,8 +167,8 @@ function parseAddArgs(argv) {
       }
       out.dest = v;
     } else if (a === "-s" || a === "--skill") {
-      while (i + 1 < argv.length && !argv[i + 1].startsWith("-")) {
-        out.skills.push(argv[++i]);
+      while (i + 1 < argv.length && !argv[i + 1]!.startsWith("-")) {
+        out.skills.push(argv[++i]!);
       }
       if (out.skills.length === 0) {
         log.fail(`${a} requires at least one skill name`);
@@ -166,13 +183,13 @@ function parseAddArgs(argv) {
   return out;
 }
 
-function prettyPath(p) {
+function prettyPath(p: string): string {
   const rel = relative(process.cwd(), resolve(p));
   if (!rel.startsWith("..") && !rel.startsWith("/")) return `./${rel}`;
   return p;
 }
 
-function printAddHelp() {
+function printAddHelp(): void {
   process.stderr.write(`\
 ${log.bold("coskills add")} - Bundle a skills.sh skill into a Cowork-uploadable ZIP
 

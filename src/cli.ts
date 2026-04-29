@@ -1,15 +1,21 @@
 import { readFile } from "node:fs/promises";
 
-import { add } from "./add.mjs";
-import { list } from "./list.mjs";
-import { remove } from "./remove.mjs";
-import * as log from "./log.mjs";
+import { add } from "./add.js";
+import { list } from "./list.js";
+import { remove } from "./remove.js";
+import * as log from "./log.js";
 
-const PKG = JSON.parse(
+interface PackageJson {
+  version: string;
+}
+
+const PKG: PackageJson = JSON.parse(
   await readFile(new URL("../package.json", import.meta.url), "utf8"),
-);
+) as PackageJson;
 
-const COMMANDS = {
+type Command = (args: string[]) => Promise<void>;
+
+const COMMANDS: Record<string, Command> = {
   add,
   a: add,
   list,
@@ -18,7 +24,7 @@ const COMMANDS = {
   rm: remove,
 };
 
-export async function run(argv) {
+export async function run(argv: string[]): Promise<void> {
   const [first, ...rest] = argv;
 
   if (!first || first === "-h" || first === "--help" || first === "help") {
@@ -41,7 +47,7 @@ export async function run(argv) {
   await cmd(rest);
 }
 
-function printHelp() {
+function printHelp(): void {
   process.stderr.write(`\
 ${log.bold("coskills")} - Bundle skills.sh skills as Claude Cowork-uploadable ZIP archives
 

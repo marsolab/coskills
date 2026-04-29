@@ -5,9 +5,9 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { zipDirectory } from "../src/zip.mjs";
+import { zipDirectory } from "../src/zip.ts";
 
-async function makeFixture() {
+async function makeFixture(): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "coskills-test-"));
   await mkdir(join(dir, "src", "rules"), { recursive: true });
   await writeFile(
@@ -21,7 +21,7 @@ async function makeFixture() {
   return dir;
 }
 
-function hasUnzip() {
+function hasUnzip(): boolean {
   const r = spawnSync("unzip", ["-v"], { stdio: "ignore" });
   return r.status === 0;
 }

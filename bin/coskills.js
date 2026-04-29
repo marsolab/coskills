@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { run } from "../src/cli.mjs";
+import { run } from "../dist/cli.js";
 
 try {
   await run(process.argv.slice(2));
