@@ -3,7 +3,7 @@ import { readdir, readFile, mkdir, writeFile, stat } from "node:fs/promises";
 import { join, relative, dirname, sep, posix } from "node:path";
 import { Buffer } from "node:buffer";
 
-const CRC_TABLE = (() => {
+const CRC_TABLE: Uint32Array = (() => {
   const t = new Uint32Array(256);
   for (let n = 0; n < 256; n++) {
     let c = n;
@@ -15,26 +15,32 @@ const CRC_TABLE = (() => {
   return t;
 })();
 
-function crc32(buf) {
+function crc32(buf: Buffer): number {
   let c = 0xffffffff;
   for (let i = 0; i < buf.length; i++) {
-    c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+    c = (CRC_TABLE[(c ^ buf[i]!) & 0xff]! ^ (c >>> 8)) >>> 0;
   }
   return (c ^ 0xffffffff) >>> 0;
 }
 
-function deflateRaw(buf) {
+function deflateRaw(buf: Buffer): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const chunks = [];
+    const chunks: Buffer[] = [];
     const z = createDeflateRaw({ level: 9 });
-    z.on("data", (c) => chunks.push(c));
+    z.on("data", (c: Buffer) => chunks.push(c));
     z.on("end", () => resolve(Buffer.concat(chunks)));
     z.on("error", reject);
     z.end(buf);
   });
 }
 
-async function* walk(dir, base = dir) {
+interface WalkEntry {
+  type: "dir" | "file";
+  path: string;
+  full: string;
+}
+
+async function* walk(dir: string, base: string = dir): AsyncGenerator<WalkEntry> {
   const entries = await readdir(dir, { withFileTypes: true });
   entries.sort((a, b) => a.name.localeCompare(b.name));
   for (const e of entries) {
@@ -49,7 +55,7 @@ async function* walk(dir, base = dir) {
   }
 }
 
-function dosTime(d = new Date()) {
+function dosTime(d: Date = new Date()): { time: number; date: number } {
   const time =
     ((d.getHours() & 0x1f) << 11) |
     ((d.getMinutes() & 0x3f) << 5) |
@@ -61,15 +67,23 @@ function dosTime(d = new Date()) {
   return { time, date };
 }
 
-export async function zipDirectory(srcDir, outFile, { prefix = "" } = {}) {
+export interface ZipOptions {
+  prefix?: string;
+}
+
+export async function zipDirectory(
+  srcDir: string,
+  outFile: string,
+  { prefix = "" }: ZipOptions = {},
+): Promise<void> {
   const root = await stat(srcDir);
   if (!root.isDirectory()) {
     throw new Error(`Not a directory: ${srcDir}`);
   }
 
   const { time, date } = dosTime();
-  const local = [];
-  const central = [];
+  const local: Buffer[] = [];
+  const central: Buffer[] = [];
   let offset = 0;
 
   const cleanPrefix = prefix ? prefix.replace(/\/+$/, "") + "/" : "";

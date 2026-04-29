@@ -1,10 +1,24 @@
 import { readdir, stat } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 
-import { resolveDest, describeScope } from "./paths.mjs";
-import * as log from "./log.mjs";
+import { resolveDest, describeScope } from "./paths.js";
+import * as log from "./log.js";
 
-export async function list(args) {
+interface ListOptions {
+  global: boolean;
+  dest: string | null;
+  json: boolean;
+  help: boolean;
+}
+
+interface ListedSkill {
+  name: string;
+  path: string;
+  size: number;
+  modified: string;
+}
+
+export async function list(args: string[]): Promise<void> {
   const opts = parseListArgs(args);
   if (opts.help) {
     printListHelp();
@@ -30,7 +44,7 @@ export async function list(args) {
     .sort();
 
   if (opts.json) {
-    const out = await Promise.all(
+    const out: ListedSkill[] = await Promise.all(
       skills.map(async (file) => {
         const s = await stat(join(dest, file));
         return {
@@ -61,10 +75,10 @@ export async function list(args) {
   }
 }
 
-function parseListArgs(argv) {
-  const out = { global: false, dest: null, json: false, help: false };
+function parseListArgs(argv: string[]): ListOptions {
+  const out: ListOptions = { global: false, dest: null, json: false, help: false };
   for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
+    const a = argv[i]!;
     if (a === "-h" || a === "--help") out.help = true;
     else if (a === "-g" || a === "--global") out.global = true;
     else if (a === "--json") out.json = true;
@@ -82,13 +96,13 @@ function parseListArgs(argv) {
   return out;
 }
 
-function prettyPath(p) {
+function prettyPath(p: string): string {
   const rel = relative(process.cwd(), resolve(p));
   if (!rel.startsWith("..") && !rel.startsWith("/")) return `./${rel}`;
   return p;
 }
 
-function printListHelp() {
+function printListHelp(): void {
   process.stderr.write(`\
 ${log.bold("coskills list")} - List bundled Cowork skill archives
 

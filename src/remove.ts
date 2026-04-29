@@ -1,10 +1,18 @@
 import { readdir, rm, stat } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 
-import { resolveDest } from "./paths.mjs";
-import * as log from "./log.mjs";
+import { resolveDest } from "./paths.js";
+import * as log from "./log.js";
 
-export async function remove(args) {
+interface RemoveOptions {
+  global: boolean;
+  dest: string | null;
+  names: string[];
+  all: boolean;
+  help: boolean;
+}
+
+export async function remove(args: string[]): Promise<void> {
   const opts = parseRemoveArgs(args);
   if (opts.help) {
     printRemoveHelp();
@@ -13,7 +21,7 @@ export async function remove(args) {
 
   const dest = resolveDest(opts);
 
-  let entries;
+  let entries: string[];
   try {
     entries = await readdir(dest);
   } catch {
@@ -51,10 +59,16 @@ export async function remove(args) {
   log.pipe(`${removed} removed from ${log.cyan(prettyPath(dest))}`);
 }
 
-function parseRemoveArgs(argv) {
-  const out = { global: false, dest: null, names: [], all: false, help: false };
+function parseRemoveArgs(argv: string[]): RemoveOptions {
+  const out: RemoveOptions = {
+    global: false,
+    dest: null,
+    names: [],
+    all: false,
+    help: false,
+  };
   for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
+    const a = argv[i]!;
     if (a === "-h" || a === "--help") out.help = true;
     else if (a === "-g" || a === "--global") out.global = true;
     else if (a === "--all") out.all = true;
@@ -74,13 +88,13 @@ function parseRemoveArgs(argv) {
   return out;
 }
 
-function prettyPath(p) {
+function prettyPath(p: string): string {
   const rel = relative(process.cwd(), resolve(p));
   if (!rel.startsWith("..") && !rel.startsWith("/")) return `./${rel}`;
   return p;
 }
 
-function printRemoveHelp() {
+function printRemoveHelp(): void {
   process.stderr.write(`\
 ${log.bold("coskills remove")} - Remove bundled Cowork skill archives
 

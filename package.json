@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Install skills from skills.sh and bundle them as Cowork-ready zip archives.",
   "bin": {
-    "coskills": "./bin/coskills.mjs"
+    "coskills": "./bin/coskills.js"
   },
   "type": "module",
   "engines": {
@@ -11,12 +11,20 @@
   },
   "files": [
     "bin",
-    "src",
+    "dist",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "test": "node --test 'test/*.test.mjs'"
+    "build": "tsc",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
   },
   "keywords": [
     "skills",
