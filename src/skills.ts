@@ -8,9 +8,9 @@ export interface RunSkillsAddOptions {
   cwd: string;
   skills?: string[];
   fullDepth?: boolean;
+  extraArgs?: string[];
   agent?: string;
   copy?: boolean;
-  yes?: boolean;
   inherit?: boolean;
 }
 
@@ -31,42 +31,47 @@ export function runSkillsAdd(opts: RunSkillsAddOptions): Promise<RunnerResult> {
     cwd,
     skills = [],
     fullDepth = false,
+    extraArgs = [],
     agent = "claude-code",
     copy = true,
-    yes = true,
     inherit = true,
   } = opts;
-  const args = buildAddArgs({ pkg, skills, fullDepth, agent, copy, yes });
+  const args = buildAddArgs({ pkg, skills, fullDepth, extraArgs, agent, copy });
   return spawnRunner(args, { cwd, inherit });
 }
 
-interface BuildAddArgsInput {
+export interface BuildAddArgsInput {
   pkg: string;
-  skills: string[];
-  fullDepth: boolean;
-  agent: string;
-  copy: boolean;
-  yes: boolean;
+  skills?: string[];
+  fullDepth?: boolean;
+  extraArgs?: string[];
+  agent?: string;
+  copy?: boolean;
 }
 
-function buildAddArgs({
+// `--agent claude-code` and `--copy` are intentionally non-configurable:
+// post-processing in add.ts reads `<cwd>/.claude/skills/<name>/`, which is
+// exactly the layout those two flags produce. Anything else and the bundler
+// silently finds nothing to zip.
+export function buildAddArgs({
   pkg,
-  skills,
-  fullDepth,
-  agent,
-  copy,
-  yes,
+  skills = [],
+  fullDepth = false,
+  extraArgs = [],
+  agent = "claude-code",
+  copy = true,
 }: BuildAddArgsInput): string[] {
   const args: string[] = [];
   if (RUNNER === "npx") args.push("--yes");
   args.push(SKILLS_BIN, "add", pkg);
   if (agent) args.push("--agent", agent);
   if (copy) args.push("--copy");
-  if (yes) args.push("--yes");
+  args.push("--yes");
   if (skills.length) {
     args.push("--skill", ...skills);
   }
   if (fullDepth) args.push("--full-depth");
+  if (extraArgs.length) args.push(...extraArgs);
   return args;
 }
 

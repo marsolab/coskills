@@ -63,9 +63,18 @@ Each `.skill` archive contains the skill folder at the root of the zip (e.g. `de
 | --- | --- |
 | `-g, --global` | Place archives in `~/.cowork/skills` instead of the project |
 | `-s, --skill <names>` | Filter which skills from a multi-skill repo (use `*` for all) |
-| `-y, --yes` | Skip confirmation prompts (forwarded to `skills.sh`) |
 | `--dest <path>` | Override the destination directory |
 | `--full-depth` | Search all subdirectories even when a root `SKILL.md` exists |
+| `--` | Forward remaining args verbatim to `skills add` |
+
+#### Forwarding flags to skills.sh
+
+Anything after `--` is passed straight through to `skills add`, so any future
+skills.sh flag works without waiting on a coskills release:
+
+```sh
+npx coskills add vercel-labs/agent-skills -- --ref main
+```
 
 ### Examples
 
@@ -115,6 +124,8 @@ npx skills add <package> --agent claude-code --copy --yes
 1. Renames each skill's manifest from `SKILL.md` → `Skill.md` (Cowork's expected casing).
 2. Creates a `.skill` archive whose root is the skill directory (e.g. `deploy-to-vercel/Skill.md`, `deploy-to-vercel/resources/...`).
 3. Writes the archive into `.cowork/skills/`.
+
+`--agent claude-code --copy --yes` are unconditional: post-processing depends on the directory layout `--agent claude-code --copy` produces, and `--yes` is always safe because the wrapper runs in a temp directory the user never sees. Anything else you want to send to `skills add` goes after `--` (see [Forwarding flags to skills.sh](#forwarding-flags-to-skillssh)).
 
 The temp directory is cleaned up afterwards, so your real `.claude/skills/` is never touched.
 

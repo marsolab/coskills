@@ -65,9 +65,9 @@ ${log.bold("Manage skills:")}
 ${log.bold("Add Options:")}
   -g, --global           Place archives in ~/.cowork/skills instead of project
   -s, --skill <skills>   Specify skill names to bundle (use '*' for all)
-  -y, --yes              Skip confirmation prompts
   --dest <path>          Override destination directory
   --full-depth           Search all subdirectories even when a root SKILL.md exists
+  --                     Forward remaining args to 'skills add' (see 'coskills add --help')
 
 ${log.bold("Remove Options:")}
   -g, --global           Remove from ~/.cowork/skills (default: project)
@@ -85,8 +85,9 @@ ${log.bold("Options:")}
 
 ${log.bold("Examples:")}
   ${log.dim("$")} coskills add vercel-labs/agent-skills
-  ${log.dim("$")} coskills add vercel-labs/agent-skills -s pr-review -y
+  ${log.dim("$")} coskills add vercel-labs/agent-skills -s pr-review
   ${log.dim("$")} coskills add vercel-labs/agent-skills --global
+  ${log.dim("$")} coskills add vercel-labs/agent-skills -- --ref main
   ${log.dim("$")} coskills list
   ${log.dim("$")} coskills remove pr-review
 
