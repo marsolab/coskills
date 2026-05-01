@@ -20,7 +20,7 @@ interface AddOptions {
   skills: string[];
   fullDepth: boolean;
   dest: string | null;
-  yes: boolean;
+  passthrough: string[];
   help: boolean;
 }
 
@@ -59,6 +59,7 @@ export async function add(args: string[]): Promise<void> {
       cwd: tmp,
       skills: opts.skills,
       fullDepth: opts.fullDepth,
+      extraArgs: opts.passthrough,
     });
 
     const skillsRoot = join(tmp, ".claude", "skills");
@@ -143,21 +144,27 @@ async function renameManifestForCowork(skillDir: string): Promise<void> {
   }
 }
 
-function parseAddArgs(argv: string[]): AddOptions {
+export function parseAddArgs(argv: string[]): AddOptions {
   const out: AddOptions = {
     pkg: null,
     global: false,
     skills: [],
     fullDepth: false,
     dest: null,
-    yes: false,
+    passthrough: [],
     help: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
+    if (a === "--") {
+      out.passthrough.push(...argv.slice(i + 1));
+      break;
+    }
     if (a === "-h" || a === "--help") out.help = true;
     else if (a === "-g" || a === "--global") out.global = true;
-    else if (a === "-y" || a === "--yes") out.yes = true;
+    // `--yes` is always passed to skills.sh; accept `-y`/`--yes` from muscle
+    // memory without warning, but it's a no-op here.
+    else if (a === "-y" || a === "--yes") continue;
     else if (a === "--full-depth") out.fullDepth = true;
     else if (a === "--dest") {
       const v = argv[++i];
@@ -167,7 +174,11 @@ function parseAddArgs(argv: string[]): AddOptions {
       }
       out.dest = v;
     } else if (a === "-s" || a === "--skill") {
-      while (i + 1 < argv.length && !argv[i + 1]!.startsWith("-")) {
+      while (
+        i + 1 < argv.length &&
+        argv[i + 1] !== "--" &&
+        !argv[i + 1]!.startsWith("-")
+      ) {
         out.skills.push(argv[++i]!);
       }
       if (out.skills.length === 0) {
@@ -177,7 +188,7 @@ function parseAddArgs(argv: string[]): AddOptions {
     } else if (!a.startsWith("-") && !out.pkg) {
       out.pkg = a;
     } else {
-      log.warn(`Unknown option: ${a}`);
+      log.warn(`Unknown option: ${a} (use \`-- ${a}\` to forward to skills.sh)`);
     }
   }
   return out;
@@ -202,10 +213,15 @@ ${log.bold("Arguments:")}
 ${log.bold("Options:")}
   -g, --global         Place archives in ~/.cowork/skills instead of project
   -s, --skill <names>  Filter which skills from a multi-skill repo (use '*' for all)
-  -y, --yes            Skip confirmation prompts (forwarded to skills.sh)
   --dest <path>        Override destination directory
   --full-depth         Search all subdirectories even when a root SKILL.md exists
+  --                   Forward remaining args verbatim to 'skills add'
   -h, --help           Show this help message
+
+${log.bold("Forwarding to skills.sh:")}
+  Anything after \`--\` is passed straight to \`skills add\`, so any future
+  skills.sh flag works without a coskills release. Example:
+  ${log.dim("$")} coskills add vercel-labs/agent-skills -- --ref main
 
 After running, upload each .skill archive via Customize → Skills in
 Claude Cowork: https://claude.ai/customize/skills
